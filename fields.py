@@ -1,209 +1,196 @@
 class models:
+    #A small bit of hackyness, all type fields should have a space in front.
     DO_NOTHING = None
-   
-    class Parent:
-        def __init__(self, childName, **kwargs):
+  
+    @staticmethod
+    def modelToTableName(modelName):
+        tableName = ""
+        for key, letter in enumerate(modelName):
+            if letter.isupper():
+                if key == 0:
+                    tableName += letter.lower()
+                else:
+                    tableName += "_" + letter.lower()
+            else:
+                tableName += letter
+        return tableName
+
+    class BaseField:
+        def __init__(self, **kwargs):
             self.classAttrs = kwargs
-            if childName is "AutoField":
-                self.classAttrs["type"] = "SERIAL"
-            elif childName is "BooleanField":
-                self.classAttrs["type"] = "BOOLEAN NOT NULL"
-            elif childName is "CharField":
-                if "max_length" in self.classAttrs:
-                    self.classAttrs["type"] = "VARCHAR(" + str(self.classAttrs["max_length"]) + ")"
-                    self.classAttrs.pop("max_length")
-                else:
-                    raise Exception("VARCHAR No Length")
-            elif childName is "DecimalField":
-                if "max_digits" in self.classAttrs and "decimal_places" in self.classAttrs:
-                    self.classAttrs["type"] = "NUMERIC(" + str(self.classAttrs["max_digits"]) + "," + str(self.classAttrs["decimal_places"]) + ")"
-                    self.classAttrs.pop("max_digits")
-                    self.classAttrs.pop("decimal_places")
-                else:
-                    raise Exception("VARCHAR No Length")
-            elif childName is "DurationField":
-                raise NotImplementedError(childName)
-            elif childName is "FilePathField":
-                raise NotImplementedError(childName)
-            elif childName is "FloatField":
-                self.classAttrs["type"] = "DOUBLE PERCISION"
-            elif childName is "IntegerField":
-                self.classAttrs["type"] = "INT"
-            elif childName is "IPAddressField":
-                raise NotImplementedError(childName)
-            elif childName is "GenericIPAddressField":
-                raise NotImplementedError(childName)
-            elif childName is "NullBooleanField":
-                self.classAttrs["type"] = "BOOLEAN"
-            elif childName is "TextField":
-                self.classAttrs["type"] = "TEXT"
-            elif childName is "BinaryField":
-                raise NotImplementedError(childName)
-            elif childName is "UUIDField":
-                raise NotImplementedError(childName)
-            elif childName is "RelatedField":
-                raise NotImplementedError(childName)
-            elif childName is "FileField":
-                raise NotImplementedError(childName)
-            elif childName is "ImageField":
-                raise NotImplementedError(childName)
-            elif childName is "CommaSeparatedImageField":
-                raise NotImplementedError(childName)
-            elif childName is "DateField":
-                raise NotImplementedError(childName)
-            elif childName is "DateTimeField":
-                self.classAttrs["type"] = "TIMESTAMP WITH TIME"
-            elif childName is "EmailField":
-                raise NotImplementedError(childName)
-            elif childName is "BigIntegerField":
-                raise NotImplementedError(childName)
-            elif childName is "PositiveIntegerField":
-                raise NotImplementedError(childName)
-            elif childName is "PositiveSmallIntegerField":
-                raise NotImplementedError(childName)
-            elif childName is "SlugField":
-                raise NotImplementedError(childName)
-                self.classAttrs["type"] = "SMALLINT"
-                raise NotImplementedError(childName)
-            elif childName is "TimeField":
-                raise NotImplementedError(childName)
-            elif childName is "URLField":
-                raise NotImplementedError(childName)
-            elif childName is "ForeignObject":
-                raise NotImplementedError(childName)
-            elif childName is "ManyToManyField":
-                raise NotImplementedError(childName)
-            elif childName is "OrderWrt":
-                raise NotImplementedError(childName)
-            elif childName is "ForeignKey":
-                self.classAttrs["type"] = "FOREIGN KEY"
+    
     class Model:
             pass
 
-    class AutoField(Parent):
+    class AutoField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " SERIAL"
+            self.classAttrs["null"] = False
         
-    class BooleanField(Parent):
+    class BooleanField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " BOOLEAN"
+            self.classAttrs["null"] = False
         
-    class CharField(Parent):
+    class CharField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            if "max_length" in self.classAttrs:
+                self.classAttrs["type"] = " VARCHAR(" + str(self.classAttrs["max_length"]) + ")"
+                self.classAttrs.pop("max_length")
+            else:
+                raise Exception("VARCHAR Missing Fields")
 
-    class DecimalField(Parent):
+    class DecimalField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            if "max_digits" in self.classAttrs and "decimal_places" in self.classAttrs:
+                self.classAttrs["type"] = " NUMERIC(" + str(self.classAttrs["max_digits"]) + "," + str(self.classAttrs["decimal_places"]) + ")"
+                self.classAttrs.pop("max_digits")
+                self.classAttrs.pop("decimal_places")
+            else:
+                raise Exception("DECIMAL Missing Fields")
         
-    class DurationField(Parent):
+    class DurationField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("FilePathField")
         
-    class FilePathField(Parent):
+    class FilePathField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("FilePathField")
         
-    class FloatField(Parent):
+    class FloatField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " DOUBLE PRECISION"
         
-    class IntegerField(Parent):
+    class IntegerField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " INT"
         
-    class IPAddressField(Parent):
+    class IPAddressField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("IPAddressField")
         
-    class GenericIPAddressField(Parent):
+    class GenericIPAddressField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("GenericIPAddressField")
         
-    class NullBooleanField(Parent):
+    class NullBooleanField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " BOOLEAN"
         
-    class TextField(Parent):
+    class TextField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " TEXT"
         
-    class BinaryField(Parent):
+    class BinaryField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("BinaryField")
         
-    class UUIDField(Parent):
+    class UUIDField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("UUIDField")
         
-    class RelatedField(Parent):
+    class RelatedField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("RelatedField")
         
-    class FileField(Parent):
+    class FileField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("FileField")
     
-    class ImageField(Parent):
+    class ImageField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("ImageField")
     
-    class CommaSeparatedIntegerField(Parent):
+    class CommaSeparatedIntegerField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("CommaSepararedIntegerField")
     
-    class DateField(Parent):
+    class DateField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("DateField")
     
-    class DateTimeField(Parent):
+    class DateTimeField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " TIMESTAMP WITH TIME ZONE"
+            self.classAttrs["null"] = False
     
-    class EmailField(Parent):
+    class EmailField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("EmailField")
     
-    class BigIntegerField(Parent):
+    class BigIntegerField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("BigIntegerField")
     
-    class PositiveIntegerField(Parent):
+    class PositiveIntegerField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("PositiveIntegerField")
     
-    class PositiveSmallIntegerField(Parent):
+    class PositiveSmallIntegerField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("PositiveSmallIntegerField")
     
-    class SlugField(Parent):
+    class SlugField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("SlugField")
     
-    class SmallIntegerField(Parent):
+    class SmallIntegerField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            self.classAttrs["type"] = " SMALLINT"
     
-    class TimeField(Parent):
+    class TimeField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("TimeField")
     
-    class URLField(Parent):
+    class URLField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("URLField")
     
-    class ForeignObject(Parent):
+    class ForeignObject(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("ForeignObject")
     
-    class ManyToManyField(Parent):
+    class ManyToManyField(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("ManyToManyField")
     
-    class OrderWrt(Parent):
+    class OrderWrt(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            raise NotImplementedError("OrderWrt")
     
-    class ForeignKey(Parent):
+    class ForeignKey(BaseField):
         def __init__(self, *args, **kwargs):
-            models.Parent.__init__(self, type(self).__name__, **kwargs)
+            models.BaseField.__init__(self, **kwargs)
+            #TODO: This may not always be INT type...
+            self.classAttrs["type"] = "_id INT REFERENCES " + (models.modelToTableName(args[0]) if type(args[0]) is str else models.modelToTableName(args[0].__name__))

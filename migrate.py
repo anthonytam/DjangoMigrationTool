@@ -1,6 +1,7 @@
 # Some would call this hacky...
 import sys
 import inspect
+import re
 from fields import models
 
 # A little more SO
@@ -9,59 +10,99 @@ def modelCompare(current, required):
     modelToRemove = []
     for currentModel in current:
         if currentModel not in required:
-            print("DROP TABLE " + currentModel + ";")
+            print("DROP TABLE " + models.modelToTableName(currentModel) + ";")
             modelToRemove.append(currentModel)
     for model in modelToRemove:
         current.pop(model)
     modelToRemove = []
     for requiredModel in required:
         if requiredModel not in current:
-            query = "CREATE TABLE " + requiredModel + "(\n"
+            query = "CREATE TABLE " + models.modelToTableName(requiredModel) + " ("
+            query += "\n id SERIAL NOT NULL PRIMARY KEY,"
             for requiredModelAttribute in required[requiredModel]:
-                query += requiredModelAttribute + " "
+                query += "\n " + requiredModelAttribute
                 for requiredModelAtrributeProperty in required[requiredModel][requiredModelAttribute]:
                     query += getSQLForAttributeProperty(requiredModelAtrributeProperty, required[requiredModel][requiredModelAttribute][requiredModelAtrributeProperty])
-                query += ",\n"
-            query += ");"
+                query += ","
+            query = list(query)
+            query = query[:-1]
+            query = "".join(query)
+            query += "\n);"
             print(query)
         elif current[requiredModel] != required[requiredModel]:
+            isAlterNeeded = False
+            query = "ALTER TABLE " + models.modelToTableName(requiredModel)
             for currentModelAttribute in current[requiredModel]:
                 if currentModelAttribute not in required[requiredModel]:
-                    print("\t" + requiredModel + "." + currentModelAttribute + " is not longer needed (ALTER TABLE TO RM ATT?)")
+                    query += "\n DROP COLUMN " + currentModelAttribute + ","
+                    isAlterNeeded = True
                     modelToRemove.append(currentModelAttribute)
             for model in modelToRemove:
                 current[requiredModel].pop(model)
             modelToRemove = []
             for requiredModelAttribute in required[requiredModel]:
                 if requiredModelAttribute not in current[requiredModel]:
-                    print("\t" + requiredModel + "." + requiredModelAttribute + " is needed (ALTER TABLE TO ADD ATT?)")
+                    isAlterNeeded = True
+                    query += "\n ADD COLUMN " + requiredModelAttribute
                     for requiredModelAtrributeProperty in required[requiredModel][requiredModelAttribute]:
-                        print("\t\t" + requiredModel + "." + requiredModelAttribute + "." + requiredModelAtrributeProperty + " needs to be " + str(required[requiredModel][requiredModelAttribute][requiredModelAtrributeProperty]) + " (ADD TO ALTER TABLE)")
+                        query += getSQLForAttributeProperty(requiredModelAtrributeProperty, required[requiredModel][requiredModelAttribute][requiredModelAtrributeProperty])
+                    query += ","
                 elif current[requiredModel][requiredModelAttribute] != required[requiredModel][requiredModelAttribute]:
                     for currentModelAttributeProperty in current[requiredModel][requiredModelAttribute]:
                         if currentModelAttributeProperty not in required[requiredModel][requiredModelAttribute]:
-                            print("\t" + requiredModel + "." + requiredModelAttribute + "." + currentModelAttributeProperty + " is no longer needed (ALTER TABLE TO RM PROPERTY?)")
+                            #A bit of a special case because postgres handles this differently
+                            getSQLToRemoveProperty(requiredModel, requiredModelAttribute, currentModelAttributeProperty)
                             modelToRemove.append(currentModelAttributeProperty)
                     for model in modelToRemove:
                         current[requiredModel][requiredModelAttribute].pop(model)
                     modelToRemove = []
-                    for requiredModelAttributePropery in required[requiredModel][requiredModelAttribute]:
-                        if requiredModelAttributePropery not in current[requiredModel][requiredModelAttribute]:
-                            print("\t" + requiredModel + "." + requiredModelAttribute + "." + requiredModelAttributePropery + " is needed (ALTER TABLE TO ADD PROPERTY?)")
-                        elif current[requiredModel][requiredModelAttribute][requiredModelAttributePropery] != required[requiredModel][requiredModelAttribute][requiredModelAttributePropery]:
-                            print("\t" + requiredModel + "." + requiredModelAttribute + "." + requiredModelAttributePropery + " needs to become " + str(required[requiredModel][requiredModelAttribute][requiredModelAttributePropery]) + " (ALTER TABLE TO CHANGE VALUE?)")
+                    for requiredModelAttributeProperty in required[requiredModel][requiredModelAttribute]:
+                        if requiredModelAttributeProperty not in current[requiredModel][requiredModelAttribute]:
+                            #A bit of a special case because postgres handles this differently
+                            getSQLToAddProperty(requiredModel, requiredModelAttribute, requiredModelAttributeProperty, required[requiredModel][requiredModelAttribute][requiredModelAttributeProperty])
+                        elif current[requiredModel][requiredModelAttribute][requiredModelAttributeProperty] != required[requiredModel][requiredModelAttribute][requiredModelAttributeProperty]:
+                            #A bit of a special case because postgres handles this differently
+                            getSQLToAddProperty(requiredModel, requiredModelAttribute, requiredModelAttributeProperty, required[requiredModel][requiredModelAttribute][requiredModelAttributeProperty])
+            query = list(query)
+            query[-1] = ';'
+            query = "".join(query)
+            if isAlterNeeded:
+                print(query)
+
+def getSQLToRemoveProperty(table, attribute, property):
+    if property is "blank":
+        pass
+    elif property is "null":
+        print("ALTER TABLE " + models.modelToTableName(table) + " ALTER COLUMN " + attribute + " SET NOT NULL;")
+    elif property is "unique":
+        print("ALTER TABLE " + models.modelToTableName(table) + " ADD UNIQUE (" + attribute + ");")
+    else:
+        raise NotImplementedError(table + " > " + attribute + " > " + property)
+
+def getSQLToAddProperty(table, attribute, property, value):
+    if property is "type":
+        print("ALTER TABLE " + models.modelToTableName(table) + " ALTER COLUMN " + attribute + " TYPE " + value + ";")
+    elif property is "unique":
+        # We need to allow values to be null, in SQL we do nothing.
+        pass
+    elif property is "null":
+        print("ALTER TABLE " + models.modelToTableName(table) + " ALTER COLUMN " + attribute + " " + ("DROP" if value else "SET") + " NOT NULL;")
+    else:
+        raise NotImplementedError(table + " > " + attribute + " > " + property)
 
 def getSQLForAttributeProperty(key, value):
     if key is "type":
-        return value + " "
+        return value
     elif key is "null":
-        return "" if value else "NOT NULL "
+        return "" if value else " NOT NULL"
     elif key is "unique":
-        return "UNIQUE " if value else ""
+        return " UNIQUE" if value else ""
     elif key is "blank":
         return ""
+    elif key is "pk":
+        return "PRIMARY KEY"
     elif key is "max_length":
-        raise Exception("HOW THE FUCK? " + key)
+        raise Exception("max_length should be utilized by the Field constructor. A constructor has not been implemented correctly.")
     else:
         raise NotImplementedError(key)
 
